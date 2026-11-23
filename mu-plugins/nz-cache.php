@@ -97,16 +97,23 @@ function nz_cache_purge_site(): void {
 }
 
 // ponytail: whole-site purge on any change; sites are small. Per-URL purge if a site gets big.
+// Publish / unpublish / trash in the WP editor.
 add_action('transition_post_status', function ($new, $old, $post) {
 	if (($new === 'publish' || $old === 'publish') && !wp_is_post_revision($post) && $post->post_type !== 'nav_menu_item') nz_cache_purge_site();
 }, 10, 3);
+// Updates to published content. Oxygen Builder saves pages and templates by writing post meta and firing only
+// save_post (no transition_post_status), so this hook is what catches Oxygen edits. Drafts are skipped so
+// editor autosaves don't keep emptying the cache.
+add_action('save_post', function ($id, $post) {
+	if ($post && $post->post_status === 'publish' && !wp_is_post_revision($id) && !wp_is_post_autosave($id) && $post->post_type !== 'nav_menu_item') nz_cache_purge_site();
+}, 10, 2);
 foreach (['deleted_post', 'edited_term', 'created_term', 'delete_term', 'wp_update_nav_menu', 'switch_theme', 'customize_save_after',
 	'activated_plugin', 'deactivated_plugin', 'update_option_sidebars_widgets', 'woocommerce_product_set_stock', 'woocommerce_variation_set_stock'] as $hook) {
 	add_action($hook, 'nz_cache_purge_site');
 }
-// Oxygen saves templates/stylesheets/global settings as options.
+// Oxygen saves global styles (classes, selectors, stylesheets, colors, settings) as options.
 add_action('updated_option', function ($name) {
-	if (preg_match('/^(oxygen_|ct_global_settings|ct_style_sheets|ct_components_classes|ct_custom_selectors)/', $name)) nz_cache_purge_site();
+	if (preg_match('/^(oxygen_vsb_|ct_global_settings|ct_style_|ct_components_classes|ct_custom_selectors)/', $name)) nz_cache_purge_site();
 });
 
 add_action('admin_bar_menu', function ($bar) {
