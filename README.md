@@ -35,6 +35,17 @@ When no site runs WP Rocket: delete the plugin, `wp-content/advanced-cache.php`,
 php -d zend.assertions=1 -d assert.exception=1 tests/nz-cache-test.php
 ```
 
+## perf baseline
+
+`scripts/perf-baseline.sh` measures every live site's homepage into `metrics/<date>.csv`: server-side TTFB from nz-cache and with a full PHP render (median of 5, measured on the server incl. TLS), plus one Lighthouse mobile lab run (score, FCP, LCP, TBT, CLS, page weight, requests). Baseline: `metrics/2026-11-23-baseline.csv` (right after the WP Rocket -> nz-cache switch).
+
+```
+scripts/perf-baseline.sh                       # ~15 min, writes metrics/YYYY-MM-DD.csv
+python3 scripts/perf-compare.py metrics/2026-11-23-baseline.csv metrics/YYYY-MM-DD.csv
+```
+
+Lighthouse is a single lab run: treat differences under ~10% (score +-5) as noise.
+
 ## License
 
 GPL-2.0-or-later
